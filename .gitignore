@@ -1,0 +1,27 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+*.pdb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Tool state
+.omc/
+
+# Debug / test artifacts
+debug-*.pdf
+test-*.pdf
+test-*.typ
+
+# Environment
+.env
+.env.*

@@ -1,0 +1,26 @@
+[package]
+name = "md-pdf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "High-quality Markdown to PDF converter CLI"
+keywords = ["markdown", "pdf", "typst", "converter", "cli"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "md-pdf"
+path = "src/main.rs"
+
+[dependencies]
+md-pdf-core = { path = "../md-pdf-core" }
+
+# CLI
+clap = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

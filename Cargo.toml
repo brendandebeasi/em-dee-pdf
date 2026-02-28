@@ -1,0 +1,48 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/md-pdf-core",
+    "crates/md-pdf-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Brendan DeBeasi <hi@neueway.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/brendandebeasi/em-dee-pdf"
+description = "High-quality Markdown to PDF converter"
+keywords = ["markdown", "pdf", "typst", "converter"]
+categories = ["command-line-utilities", "text-processing"]
+
+[workspace.dependencies]
+# Markdown parsing
+comrak = "0.31"
+
+# PDF generation via Typst
+typst = "0.14"
+typst-pdf = "0.14"
+typst-as-lib = "0.15"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Async (for image fetching)
+tokio = { version = "1", features = ["rt", "fs", "io-util"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+dirs = "6"
+tempfile = "3"
+base64 = "0.22"

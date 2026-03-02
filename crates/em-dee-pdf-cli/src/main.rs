@@ -119,6 +119,17 @@ fn main() -> Result<()> {
                 .with_context(|| format!("Failed to read {:?}", input_path))?
         };
 
+        // Compute base directory for resolving relative image paths
+        let base_path = if input_path.as_os_str() == "-" {
+            // For stdin, use the current working directory
+            std::env::current_dir().ok()
+        } else {
+            // Use the parent directory of the input file
+            input_path.canonicalize().ok().and_then(|p| {
+                p.parent().map(|d| d.to_path_buf())
+            })
+        };
+
         // Handle --list-tables
         if cli.list_tables {
             let tables = extract_tables(&markdown);
@@ -155,7 +166,7 @@ fn main() -> Result<()> {
         if cli.emit_typst {
             // Output Typst source
             let typst_source = converter
-                .to_typst(&markdown)
+                .to_typst(&markdown, base_path.as_deref())
                 .context("Failed to transpile to Typst")?;
 
             if output_path.as_os_str() == "-" {
@@ -173,7 +184,7 @@ fn main() -> Result<()> {
         } else {
             // Generate PDF
             let pdf_bytes = converter
-                .convert(&markdown)
+                .convert(&markdown, base_path.as_deref())
                 .context("Failed to convert to PDF")?;
 
             std::fs::write(&output_path, &pdf_bytes)

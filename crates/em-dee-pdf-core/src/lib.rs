@@ -15,7 +15,7 @@
 //!
 //! let config = Config::default();
 //! let converter = Converter::new(config)?;
-//! let pdf_bytes = converter.convert("# Hello World")?;
+//! let pdf_bytes = converter.convert("# Hello World", None)?;
 //! std::fs::write("output.pdf", pdf_bytes)?;
 //! ```
 
@@ -62,12 +62,16 @@ impl Converter {
     }
 
     /// Convert Markdown to PDF bytes.
-    pub fn convert(&self, markdown: &str) -> Result<Vec<u8>> {
+    ///
+    /// `base_path` is the directory containing the input Markdown file,
+    /// used to resolve relative image paths. Pass `None` for string-only
+    /// input where relative paths are not expected.
+    pub fn convert(&self, markdown: &str, base_path: Option<&std::path::Path>) -> Result<Vec<u8>> {
         // Parse markdown to AST
         let document = self.parser.parse(markdown)?;
 
         // Transpile AST to Typst source (with temp file tracking for mermaid)
-        let transpile_result = self.transpiler.transpile_with_resources(&document)?;
+        let transpile_result = self.transpiler.transpile_with_resources(&document, base_path)?;
 
         // Render Typst to PDF (temp_files stay alive until this completes)
         let pdf_bytes = self.renderer.render(&transpile_result.source)?;
@@ -79,10 +83,13 @@ impl Converter {
     }
 
     /// Convert Markdown to Typst source (useful for debugging).
+    ///
+    /// `base_path` is the directory containing the input Markdown file,
+    /// used to resolve relative image paths.
     /// Note: Mermaid diagrams will have temp file paths that may not exist
     /// after this function returns. Use convert() for full PDF generation.
-    pub fn to_typst(&self, markdown: &str) -> Result<String> {
+    pub fn to_typst(&self, markdown: &str, base_path: Option<&std::path::Path>) -> Result<String> {
         let document = self.parser.parse(markdown)?;
-        self.transpiler.transpile(&document)
+        self.transpiler.transpile(&document, base_path)
     }
 }

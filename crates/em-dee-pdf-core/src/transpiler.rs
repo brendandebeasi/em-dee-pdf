@@ -1,8 +1,9 @@
 //! Transpiler from Markdown AST to Typst source.
 
+use std::path::Path;
+
 use comrak::nodes::{AstNode, ListType, NodeValue, TableAlignment};
 use comrak::{parse_document, Arena};
-
 use crate::config::Config;
 use crate::error::Result;
 use crate::mermaid;
@@ -16,6 +17,14 @@ pub struct TranspileResult {
     pub source: String,
     /// Temp files that must be kept alive (e.g., mermaid diagram PNGs).
     pub temp_files: Vec<tempfile::NamedTempFile>,
+}
+
+/// Per-call context threaded through the recursive visit methods.
+struct TranspileCtx<'a> {
+    /// Base directory for resolving relative image paths.
+    base_path: Option<&'a Path>,
+    /// Temp files that must be kept alive (e.g., mermaid diagram PNGs).
+    temp_files: Vec<tempfile::NamedTempFile>,
 }
 
 /// Transpiles Markdown AST to Typst source code.
@@ -41,8 +50,8 @@ impl Transpiler {
 
     /// Transpile a parsed document to Typst source.
     /// Returns just the source string (temp files are not tracked).
-    pub fn transpile(&self, doc: &ParsedDocument) -> Result<String> {
-        let result = self.transpile_with_resources(doc)?;
+    pub fn transpile(&self, doc: &ParsedDocument, base_path: Option<&Path>) -> Result<String> {
+        let result = self.transpile_with_resources(doc, base_path)?;
         // Note: temp_files will be dropped here, so mermaid diagrams
         // won't work with this method. Use transpile_with_resources instead.
         Ok(result.source)
@@ -50,9 +59,12 @@ impl Transpiler {
 
     /// Transpile a parsed document to Typst source with resource tracking.
     /// Returns the source and temp files that must be kept alive during rendering.
-    pub fn transpile_with_resources(&self, doc: &ParsedDocument) -> Result<TranspileResult> {
+    pub fn transpile_with_resources(&self, doc: &ParsedDocument, base_path: Option<&Path>) -> Result<TranspileResult> {
         let mut output = String::new();
-        let mut temp_files = Vec::new();
+        let mut ctx = TranspileCtx {
+            base_path,
+            temp_files: Vec::new(),
+        };
 
         // Emit theme preamble
         output.push_str(self.theme.preamble());
@@ -74,10 +86,13 @@ impl Transpiler {
             || doc.front_matter.as_ref().and_then(|fm| fm.toc).unwrap_or(false);
 
         if toc_enabled {
-            // Make outline entries explicit PDF links to their heading locations.
+            // Remove dot leaders since entries use underline styling.
+            // fill moved from outline() to outline.entry in Typst 0.13+.
+            output.push_str("#set outline.entry(fill: none)\n");
+            // Make outline entries clickable PDF links with visible link styling.
             // context + link() is required in Typst 0.12+ for in-document navigation.
             output.push_str(
-                "#show outline.entry: it => context link(it.element.location())[#it]\n"
+                "#show outline.entry: it => context link(it.element.location())[#text(fill: rgb(\"#0969da\"), weight: \"medium\")[#underline(offset: 2pt, stroke: 0.5pt + rgb(\"#0969da\"))[#it]]]\n"
             );
             output.push_str(&format!(
                 "#outline(title: \"Contents\", indent: 1em, depth: {})\n",
@@ -91,14 +106,14 @@ impl Transpiler {
         let root = parse_document(&arena, &doc.source, &doc.options);
 
         if self.section_containers {
-            self.visit_with_sections(root, &mut output, &mut temp_files)?;
+            self.visit_with_sections(root, &mut output, &mut ctx)?;
         } else {
-            self.visit_children(root, &mut output, &mut temp_files)?;
+            self.visit_children(root, &mut output, &mut ctx)?;
         }
 
         Ok(TranspileResult {
             source: output,
-            temp_files,
+            temp_files: ctx.temp_files,
         })
     }
 
@@ -107,7 +122,7 @@ impl Transpiler {
         &self,
         node: &'a AstNode<'a>,
         output: &mut String,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<()> {
         let mut in_section = false;
         let mut preamble_content = String::new();
@@ -132,14 +147,14 @@ impl Transpiler {
 
                 // Start new section with heading
                 output.push_str("#md-section[\n");
-                self.visit_node(child, output, temp_files)?;
+                self.visit_node(child, output, ctx)?;
                 in_section = true;
             } else if in_section {
                 // Inside a section, emit content normally
-                self.visit_node(child, output, temp_files)?;
+                self.visit_node(child, output, ctx)?;
             } else {
                 // Before first H2, collect preamble (like H1)
-                self.visit_node(child, &mut preamble_content, temp_files)?;
+                self.visit_node(child, &mut preamble_content, ctx)?;
             }
         }
 
@@ -161,10 +176,10 @@ impl Transpiler {
         &self,
         node: &'a AstNode<'a>,
         output: &mut String,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<()> {
         for child in node.children() {
-            self.visit_node(child, output, temp_files)?;
+            self.visit_node(child, output, ctx)?;
         }
         Ok(())
     }
@@ -174,13 +189,13 @@ impl Transpiler {
         &self,
         node: &'a AstNode<'a>,
         output: &mut String,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<()> {
         let value = &node.data.borrow().value;
 
         match value {
             NodeValue::Document => {
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
             }
 
             NodeValue::FrontMatter(_) => {
@@ -194,13 +209,13 @@ impl Transpiler {
                 let slug = heading_slug(&text);
                 output.push_str(&prefix);
                 output.push(' ');
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str(&format!(" <{}>", slug));
                 output.push_str("\n\n");
             }
 
             NodeValue::Paragraph => {
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str("\n\n");
             }
 
@@ -218,19 +233,19 @@ impl Transpiler {
 
             NodeValue::Strong => {
                 output.push('*');
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push('*');
             }
 
             NodeValue::Emph => {
                 output.push('_');
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push('_');
             }
 
             NodeValue::Strikethrough => {
                 output.push_str("#strike[");
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push(']');
             }
 
@@ -255,7 +270,7 @@ impl Transpiler {
 
                 // Check for mermaid code blocks
                 if lang == Some("mermaid") && self.mermaid_enabled {
-                    output.push_str(&self.render_mermaid(&block.literal, temp_files));
+                    output.push_str(&self.render_mermaid(&block.literal, ctx));
                 } else {
                     output.push_str("```");
                     if let Some(lang) = lang {
@@ -278,21 +293,22 @@ impl Transpiler {
                 } else {
                     output.push_str(&format!("#link(\"{}\")[", escape_string(&link.url)));
                 }
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push(']');
             }
 
             NodeValue::Image(link) => {
                 let alt_text = collect_text(node);
+                let resolved_url = resolve_image_path(&link.url, ctx.base_path);
                 output.push_str(&format!(
                     "#figure(\n  image(\"{}\"),\n  caption: [{}]\n)\n\n",
-                    escape_string(&link.url),
+                    escape_string(&resolved_url),
                     escape_typst(&alt_text)
                 ));
             }
 
             NodeValue::List(list) => {
-                self.emit_list(list.list_type, list.start, node, output, temp_files)?;
+                self.emit_list(list.list_type, list.start, node, output, ctx)?;
             }
 
             NodeValue::Item(_) => {
@@ -302,10 +318,10 @@ impl Transpiler {
             NodeValue::BlockQuote => {
                 // Check for GitHub-style alerts: > [!NOTE], > [!WARNING], etc.
                 if let Some(alert_type) = self.detect_github_alert(node) {
-                    output.push_str(&self.emit_admonition(&alert_type, node, temp_files)?);
+                    output.push_str(&self.emit_admonition(&alert_type, node, ctx)?);
                 } else {
                     output.push_str("#quote(block: true)[\n");
-                    self.visit_children(node, output, temp_files)?;
+                    self.visit_children(node, output, ctx)?;
                     output.push_str("]\n\n");
                 }
             }
@@ -315,7 +331,7 @@ impl Transpiler {
             }
 
             NodeValue::Table(table) => {
-                self.emit_table(&table.alignments, node, output, temp_files)?;
+                self.emit_table(&table.alignments, node, output, ctx)?;
             }
 
             NodeValue::TableRow(_) | NodeValue::TableCell => {
@@ -327,12 +343,12 @@ impl Transpiler {
                 let is_checked = symbol.map(|c| c == 'x' || c == 'X').unwrap_or(false);
                 let checkbox = if is_checked { "[x]" } else { "[ ]" };
                 output.push_str(&format!("{} ", checkbox));
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
             }
 
             NodeValue::FootnoteDefinition(footnote) => {
                 output.push_str("#footnote[");
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str(&format!("] <fn-{}>", escape_label(&footnote.name)));
                 output.push('\n');
             }
@@ -366,36 +382,36 @@ impl Transpiler {
 
             NodeValue::Superscript => {
                 output.push_str("#super[");
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push(']');
             }
 
             NodeValue::DescriptionList => {
                 output.push_str("#terms(\n");
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str(")\n\n");
             }
 
             NodeValue::DescriptionItem(_) => {
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
             }
 
             NodeValue::DescriptionTerm => {
                 output.push_str("  [");
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str("]: ");
             }
 
             NodeValue::DescriptionDetails => {
                 output.push('[');
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
                 output.push_str("],\n");
             }
 
             // Catch-all for unhandled nodes
             _ => {
                 tracing::warn!("unhandled node type: {:?}", value);
-                self.visit_children(node, output, temp_files)?;
+                self.visit_children(node, output, ctx)?;
             }
         }
 
@@ -408,7 +424,7 @@ impl Transpiler {
         start: usize,
         node: &'a AstNode<'a>,
         output: &mut String,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<()> {
         let mut item_num = start;
 
@@ -432,7 +448,7 @@ impl Transpiler {
                         output.push_str("  ");
                     }
                     first = false;
-                    self.visit_node(item_child, output, temp_files)?;
+                    self.visit_node(item_child, output, ctx)?;
                 }
             }
         }
@@ -446,7 +462,7 @@ impl Transpiler {
         alignments: &[TableAlignment],
         node: &'a AstNode<'a>,
         output: &mut String,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<()> {
         let rows: Vec<_> = node.children().collect();
         if rows.is_empty() {
@@ -488,7 +504,7 @@ impl Transpiler {
                         output.push('*');
                     }
 
-                    self.visit_children(cell, output, temp_files)?;
+                    self.visit_children(cell, output, ctx)?;
 
                     if *is_header {
                         output.push('*');
@@ -511,7 +527,7 @@ impl Transpiler {
     fn render_mermaid(
         &self,
         mermaid_source: &str,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> String {
         // Check if mmdc is available
         if !mermaid::is_mmdc_available() {
@@ -523,7 +539,7 @@ impl Transpiler {
         match mermaid::render_and_embed(mermaid_source) {
             Ok((typst_code, temp_file)) => {
                 tracing::debug!("Successfully rendered mermaid diagram to PNG");
-                temp_files.push(temp_file);
+                ctx.temp_files.push(temp_file);
                 typst_code
             }
             Err(e) => {
@@ -585,7 +601,7 @@ impl Transpiler {
         &self,
         alert_type: &str,
         node: &'a AstNode<'a>,
-        temp_files: &mut Vec<tempfile::NamedTempFile>,
+        ctx: &mut TranspileCtx<'_>,
     ) -> Result<String> {
         // Icons use Unicode symbols to avoid escaping issues
         let (bg_color, border_color, icon, title) = match alert_type {
@@ -623,7 +639,7 @@ impl Transpiler {
                             }
                         }
                         // Visit non-first nodes normally
-                        self.visit_node(text_node, &mut para_content, temp_files)?;
+                        self.visit_node(text_node, &mut para_content, ctx)?;
                     }
                     if !para_content.trim().is_empty() {
                         content.push_str(&para_content);
@@ -633,7 +649,7 @@ impl Transpiler {
                     continue;
                 }
             }
-            self.visit_node(child, &mut content, temp_files)?;
+            self.visit_node(child, &mut content, ctx)?;
         }
 
         Ok(format!(
@@ -673,6 +689,33 @@ fn heading_slug(text: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join("-")
+}
+
+/// Resolve an image path relative to the base directory of the input file.
+/// Returns the original URL unchanged for absolute paths, URLs, and data URIs.
+/// For relative paths, joins with base_path and canonicalizes.
+fn resolve_image_path(url: &str, base_path: Option<&Path>) -> String {
+    // Don't touch URLs, data URIs, or absolute paths
+    if url.starts_with("http://")
+        || url.starts_with("https://")
+        || url.starts_with("data:")
+        || Path::new(url).is_absolute()
+    {
+        return url.to_string();
+    }
+
+    // Resolve relative path against the base directory
+    if let Some(base) = base_path {
+        let resolved = base.join(url);
+        // Try to canonicalize, fall back to the joined path
+        resolved
+            .canonicalize()
+            .unwrap_or(resolved)
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        url.to_string()
+    }
 }
 
 /// Escape special Typst characters.

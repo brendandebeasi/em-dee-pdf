@@ -2,6 +2,14 @@
 
 Rust CLI that converts Markdown files to beautiful PDFs using Typst as the rendering engine.
 
+<p align="center">
+  <a href="examples/screenshots/slate.png"><img src="examples/screenshots/slate.png" width="150"></a>
+  <a href="examples/screenshots/coral.png"><img src="examples/screenshots/coral.png" width="150"></a>
+  <a href="examples/screenshots/tech.png"><img src="examples/screenshots/tech.png" width="150"></a>
+  <a href="examples/screenshots/book.png"><img src="examples/screenshots/book.png" width="150"></a>
+  <a href="examples/screenshots/cards.png"><img src="examples/screenshots/cards.png" width="150"></a>
+</p>
+
 ## What it does
 
 em-dee-pdf transforms Markdown documents into styled PDFs. The conversion process follows this architecture:
@@ -88,16 +96,16 @@ For custom themes, pass a path to a `.typ` file via the `--theme` option.
 
 <table>
 <tr>
-<td align="center"><strong>Slate</strong> (default)<br><img src="examples/screenshots/slate.png" width="380"></td>
-<td align="center"><strong>Coral</strong><br><img src="examples/screenshots/coral.png" width="380"></td>
+<td align="center"><strong>Slate</strong> — Table of Contents<br><img src="examples/screenshots/slate.png" width="380"></td>
+<td align="center"><strong>Coral</strong> — Typography & Lists<br><img src="examples/screenshots/coral.png" width="380"></td>
 </tr>
 <tr>
-<td align="center"><strong>Tech</strong><br><img src="examples/screenshots/tech.png" width="380"></td>
-<td align="center"><strong>Book</strong><br><img src="examples/screenshots/book.png" width="380"></td>
+<td align="center"><strong>Tech</strong> — Code & Tables<br><img src="examples/screenshots/tech.png" width="380"></td>
+<td align="center"><strong>Book</strong> — Alerts & Math<br><img src="examples/screenshots/book.png" width="380"></td>
 </tr>
 <tr>
-<td align="center"><strong>Cards</strong> (container)<br><img src="examples/screenshots/cards.png" width="380"></td>
-<td align="center"><strong>Corporate</strong><br><img src="examples/screenshots/corporate.png" width="380"></td>
+<td align="center"><strong>Cards</strong> — Section Containers<br><img src="examples/screenshots/cards.png" width="380"></td>
+<td align="center"><strong>Corporate</strong> — Code & Data<br><img src="examples/screenshots/corporate.png" width="380"></td>
 </tr>
 </table>
 

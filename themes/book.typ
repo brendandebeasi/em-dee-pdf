@@ -35,6 +35,7 @@
   justify: true,
   first-line-indent: 1.5em,
 )
+#show raw: set par(justify: false)
 
 // Chapter headings - elegant book style
 #show heading.where(level: 1): it => {
@@ -63,12 +64,13 @@
 
 // Code - understated
 #show raw.where(block: false): it => {
-  set text(font: ("Menlo", "Consolas", "monospace"), size: 10pt)
+  set text(font: ("Menlo", "Consolas", "Courier New", "monospace"), size: 10pt)
   it
 }
 
 #show raw.where(block: true): it => {
-  set text(font: ("Menlo", "Consolas", "monospace"), size: 9pt)
+  set text(font: ("Menlo", "Consolas", "Courier New", "monospace"), size: 9pt)
+  set par(justify: false)
   block(
     inset: (left: 1.5em, y: 0.8em),
     above: 1em,

@@ -78,6 +78,7 @@
   leading: 0.75em,
   justify: true,
 )
+#show raw: set par(justify: false)
 
 #show par: set block(spacing: 0.85em)
 
@@ -132,10 +133,11 @@
 
 #show raw.where(block: true): it => {
   set text(
-    font: ("Source Code Pro", "SF Mono", "Consolas", "monospace"),
+    font: ("Source Code Pro", "SF Mono", "Consolas", "Menlo", "Courier New", "monospace"),
     size: 9pt,
     fill: code-text,
   )
+  set par(justify: false)
   block(
     fill: code-bg,
     inset: 14pt,

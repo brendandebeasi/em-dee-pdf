@@ -72,6 +72,7 @@
 )
 
 #set par(leading: 0.7em, justify: true)
+#show raw: set par(justify: false)
 
 // =============================================================================
 // HEADINGS
@@ -129,7 +130,8 @@
 )
 
 #show raw.where(block: true): it => {
-  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "monospace"), size: 9pt, fill: code-text)
+  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Courier New", "monospace"), size: 9pt, fill: code-text)
+  set par(justify: false)
   block(
     fill: code-bg,
     inset: 16pt,

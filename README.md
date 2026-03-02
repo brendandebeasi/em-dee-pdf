@@ -15,6 +15,19 @@ Rust CLI that converts Markdown files to beautiful PDFs using Typst as the rende
 em-dee-pdf transforms Markdown documents into styled PDFs. The conversion process follows this architecture:
 Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 
+## Features
+
+- **18 built-in themes** — from minimal to corporate, with container layouts for structured documents
+- **Syntax-highlighted code blocks** — language-aware highlighting with monospace fonts across all themes
+- **LaTeX math support** — inline `$E = mc^2$` and display-mode equations with full symbol coverage
+- **Tables** — with optional column sorting (numeric or string, ascending or descending)
+- **Alerts & admonitions** — GitHub-style `[!NOTE]`, `[!TIP]`, `[!WARNING]` callout blocks
+- **Table of contents** — auto-generated with configurable depth
+- **Front matter** — YAML metadata for title, author, date
+- **Mermaid diagrams** — optional rendering via mermaid-cli
+- **Stdin/stdout piping** — composable with other CLI tools
+- **Custom themes** — pass any `.typ` file for full control over styling
+
 ## Quickstart
 
 ### Installation
@@ -112,12 +125,12 @@ For custom themes, pass a path to a `.typ` file via the `--theme` option.
 Generate these samples yourself:
 
 ```bash
-em-dee-pdf examples/showcase.md --theme slate --toc -o examples/slate.pdf
-em-dee-pdf examples/showcase.md --theme coral --toc -o examples/coral.pdf
-em-dee-pdf examples/showcase.md --theme tech --toc -o examples/tech.pdf
-em-dee-pdf examples/showcase.md --theme book --toc -o examples/book.pdf
-em-dee-pdf examples/showcase.md --theme cards --toc --sections -o examples/cards.pdf
-em-dee-pdf examples/showcase.md --theme corporate --toc -o examples/corporate.pdf
+em-dee-pdf examples/showcase.md --theme slate --toc -o examples/showcase-slate.pdf
+em-dee-pdf examples/showcase.md --theme coral --toc -o examples/showcase-coral.pdf
+em-dee-pdf examples/showcase.md --theme tech --toc -o examples/showcase-tech.pdf
+em-dee-pdf examples/showcase.md --theme book --toc -o examples/showcase-book.pdf
+em-dee-pdf examples/showcase.md --theme cards --toc --sections -o examples/showcase-cards.pdf
+em-dee-pdf examples/showcase.md --theme corporate --toc -o examples/showcase-corporate.pdf
 ```
 
 ## Configuration
@@ -153,6 +166,45 @@ front_matter = true
 syntax_highlighting = true
 mermaid = false
 ```
+
+## Math & LaTeX
+
+em-dee-pdf supports LaTeX math syntax via Typst's math engine. Enable math in your config (`math = true`, on by default) or just use dollar signs in your Markdown:
+
+**Inline math:** Wrap expressions in single dollar signs.
+
+```markdown
+The quadratic formula is $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$.
+```
+
+**Display math:** Wrap expressions in double dollar signs for centered, block-level equations.
+
+```markdown
+$$
+\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
+$$
+```
+
+Supported LaTeX features:
+- Fractions (`\frac{a}{b}`), square roots (`\sqrt{x}`), superscripts and subscripts
+- Greek letters (`\alpha`, `\beta`, `\pi`, `\omega`, etc.)
+- Operators and symbols (`\pm`, `\times`, `\infty`, `\approx`, `\leq`, `\geq`)
+- Integrals, summations, and limits with bounds
+- Matrices and aligned equations
+
+## Code Blocks
+
+Fenced code blocks with language annotations get syntax highlighting across all themes:
+
+````markdown
+```rust
+fn main() {
+    println!("Hello, world!");
+}
+```
+````
+
+All 18 themes include monospace font stacks that fall back gracefully across platforms (JetBrains Mono, Fira Code, SF Mono, Menlo, Courier New). Code blocks use non-justified text for proper character alignment.
 
 ## Docker
 

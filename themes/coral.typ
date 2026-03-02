@@ -42,6 +42,7 @@
   leading: 0.75em,
   justify: true,
 )
+#show raw: set par(justify: false)
 
 // Headings - coral accented
 #show heading.where(level: 1): it => {
@@ -78,7 +79,8 @@
 )
 
 #show raw.where(block: true): it => {
-  set text(font: ("SF Mono", "Consolas", "monospace"), size: 9pt)
+  set text(font: ("SF Mono", "Consolas", "Menlo", "Courier New", "monospace"), size: 9pt)
+  set par(justify: false)
   block(
     fill: rgb("#2d2d2d"),
     stroke: none,

@@ -66,6 +66,7 @@
 )
 
 #set par(leading: 0.75em, justify: true)
+#show raw: set par(justify: false)
 
 // =============================================================================
 // HEADINGS
@@ -96,7 +97,8 @@
 #show raw.where(block: false): box.with(fill: surface-alt, inset: (x: 4pt, y: 2pt), outset: (y: 2pt), radius: 3pt)
 
 #show raw.where(block: true): it => {
-  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "monospace"), size: 9.5pt, fill: code-text)
+  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Courier New", "monospace"), size: 9.5pt, fill: code-text)
+  set par(justify: false)
   block(fill: code-bg, inset: 16pt, radius: 6pt, width: 100%, above: 1em, below: 1em, it)
 }
 

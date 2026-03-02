@@ -70,6 +70,9 @@ impl Transpiler {
         output.push_str(self.theme.preamble());
         output.push_str("\n\n");
 
+        // Ensure math mode uses a proper math font (the theme's text font may lack math glyphs)
+        output.push_str("#show math.equation: set text(font: (\"New Computer Modern Math\", \"STIX Two Math\", \"Latin Modern Math\"))\n");
+
         // Emit document metadata if available
         if let Some(ref fm) = doc.front_matter {
             if let Some(ref title) = fm.title {
@@ -833,9 +836,13 @@ fn latex_to_typst_math(latex: &str) -> String {
     // Handle \frac{a}{b} -> (a)/(b)
     result = convert_latex_frac(&result);
 
-    // Add spaces between consecutive letters to separate variables
-    // e.g., "mc" -> "m c" but preserve things like "sin", "cos"
-    result = add_spaces_between_letters(&result);
+    // Convert remaining LaTeX-style braces {..} to Typst parens (..)
+    // after function names like sqrt, so sqrt{x} becomes sqrt(x)
+    result = convert_braces_to_parens(&result);
+
+    // Add spaces between consecutive single letters to separate variables
+    // e.g., "mc" -> "m c" but preserve Typst keywords like "sqrt", "plus.minus"
+    result = add_spaces_between_variables(&result);
 
     result
 }
@@ -917,22 +924,103 @@ fn extract_brace_content<I: Iterator<Item = char>>(chars: &mut std::iter::Peekab
     content
 }
 
-/// Add spaces between consecutive lowercase letters.
-/// This helps Typst interpret them as separate variables.
-fn add_spaces_between_letters(s: &str) -> String {
-    let mut result = String::new();
-    let mut prev_was_letter = false;
-
-    for c in s.chars() {
-        if c.is_ascii_lowercase() {
-            if prev_was_letter {
-                result.push(' ');
+/// Convert LaTeX-style braces to Typst parentheses after function names.
+/// e.g., `sqrt{x+1}` -> `sqrt(x+1)`, `{x+1}^2` stays as `{x+1}^2`
+fn convert_braces_to_parens(s: &str) -> String {
+    let func_names = ["sqrt", "abs", "norm", "floor", "ceil", "round"];
+    let mut result = s.to_string();
+    for func in func_names {
+        // Replace func{...} with func(...)
+        let open = format!("{}{{" , func);
+        while let Some(start) = result.find(&open) {
+            let brace_start = start + func.len();
+            // Find the matching closing brace
+            let mut depth = 0;
+            let mut end = None;
+            for (i, ch) in result[brace_start..].char_indices() {
+                match ch {
+                    '{' => depth += 1,
+                    '}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            end = Some(brace_start + i);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
             }
-            result.push(c);
-            prev_was_letter = true;
+            if let Some(end_pos) = end {
+                let inner = result[brace_start + 1..end_pos].to_string();
+                result = format!(
+                    "{}{}({}){}",
+                    &result[..start],
+                    func,
+                    inner,
+                    &result[end_pos + 1..]
+                );
+            } else {
+                break; // Malformed, bail
+            }
+        }
+    }
+    result
+}
+
+
+/// Add spaces between consecutive single-letter variables in Typst math.
+/// Preserves known Typst math keywords (sqrt, integral, plus.minus, etc.)
+/// by scanning for word boundaries and only splitting runs of single letters.
+fn add_spaces_between_variables(s: &str) -> String {
+    // Known Typst math identifiers that should NOT be split
+    let keywords: &[&str] = &[
+        // Math operators and functions
+        "sqrt", "integral", "infinity", "plus", "minus", "times", "div",
+        "dot", "equiv", "approx", "tilde", "prop", "double", "triple",
+        "cont", "sum", "product", "lim", "diff", "gradient",
+        "sin", "cos", "tan", "log", "ln", "exp", "max", "min", "sup", "inf",
+        "arrow", "subset", "supset", "union", "sect", "nothing",
+        "forall", "exists", "dots", "not",
+        // Greek letters (Typst built-ins)
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta",
+        "iota", "kappa", "lambda", "mu", "nu", "xi", "pi", "rho",
+        "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega",
+        "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
+        "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Pi", "Rho",
+        "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega",
+    ];
+
+    let mut result = String::new();
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len();
+    let mut i = 0;
+
+    while i < len {
+        // If we hit a letter, try to read a word
+        if chars[i].is_ascii_alphabetic() {
+            let start = i;
+            while i < len && chars[i].is_ascii_alphabetic() {
+                i += 1;
+            }
+            let word = &s[start..i];
+
+            // Check if this word (or its prefix) is a known keyword
+            if keywords.iter().any(|kw| *kw == word) || word.len() <= 1 {
+                // Known keyword or single letter — emit as-is
+                result.push_str(word);
+            } else {
+                // Unknown multi-letter sequence — likely concatenated variables
+                // Split into individual letters with spaces
+                for (j, ch) in word.chars().enumerate() {
+                    if j > 0 {
+                        result.push(' ');
+                    }
+                    result.push(ch);
+                }
+            }
         } else {
-            result.push(c);
-            prev_was_letter = false;
+            result.push(chars[i]);
+            i += 1;
         }
     }
 

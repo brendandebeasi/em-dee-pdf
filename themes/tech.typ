@@ -51,7 +51,7 @@
   number-align: right,
   footer: context {
     set align(right)
-    set text(size: 8pt, fill: text-muted, font: ("JetBrains Mono", "monospace"))
+    set text(size: 8pt, fill: text-muted, font: ("JetBrains Mono", "Menlo", "Courier New", "monospace"))
     [Page ] + counter(page).display()
   },
 )
@@ -70,6 +70,7 @@
   leading: 0.75em,
   justify: false,  // Tech docs usually don't justify
 )
+#show raw: set par(justify: false)
 
 #show par: set block(spacing: 0.9em)
 
@@ -110,7 +111,7 @@
 // CODE BLOCKS - First-class treatment for technical docs
 // =============================================================================
 #show raw.where(block: false): it => {
-  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "monospace"), size: 9.5pt)
+  set text(font: ("JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Courier New", "monospace"), size: 9.5pt)
   box(
     fill: surface-alt,
     inset: (x: 5pt, y: 3pt),
@@ -121,10 +122,11 @@
 
 #show raw.where(block: true): it => {
   set text(
-    font: ("JetBrains Mono", "Fira Code", "SF Mono", "monospace"),
+    font: ("JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Courier New", "monospace"),
     size: 9.5pt,
     fill: code-text,
   )
+  set par(justify: false)
   block(
     fill: code-bg,
     stroke: (left: 3pt + accent),

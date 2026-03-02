@@ -84,6 +84,34 @@ The project includes 18 built-in themes:
 Container themes wrap H2 sections in styled boxes when the `--sections` flag is used.
 For custom themes, pass a path to a `.typ` file via the `--theme` option.
 
+### Theme Gallery
+
+<table>
+<tr>
+<td align="center"><strong>Slate</strong> (default)<br><img src="examples/screenshots/slate.png" width="380"></td>
+<td align="center"><strong>Coral</strong><br><img src="examples/screenshots/coral.png" width="380"></td>
+</tr>
+<tr>
+<td align="center"><strong>Tech</strong><br><img src="examples/screenshots/tech.png" width="380"></td>
+<td align="center"><strong>Book</strong><br><img src="examples/screenshots/book.png" width="380"></td>
+</tr>
+<tr>
+<td align="center"><strong>Cards</strong> (container)<br><img src="examples/screenshots/cards.png" width="380"></td>
+<td align="center"><strong>Corporate</strong><br><img src="examples/screenshots/corporate.png" width="380"></td>
+</tr>
+</table>
+
+Generate these samples yourself:
+
+```bash
+em-dee-pdf examples/showcase.md --theme slate --toc -o examples/slate.pdf
+em-dee-pdf examples/showcase.md --theme coral --toc -o examples/coral.pdf
+em-dee-pdf examples/showcase.md --theme tech --toc -o examples/tech.pdf
+em-dee-pdf examples/showcase.md --theme book --toc -o examples/book.pdf
+em-dee-pdf examples/showcase.md --theme cards --toc --sections -o examples/cards.pdf
+em-dee-pdf examples/showcase.md --theme corporate --toc -o examples/corporate.pdf
+```
+
 ## Configuration
 
 Configure default behavior using a TOML file.

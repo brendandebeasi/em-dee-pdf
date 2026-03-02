@@ -1,4 +1,4 @@
-// Indigo theme for md-pdf
+// Indigo theme for em-dee-pdf
 // Deep blue-purple tones - Best for: creative, modern, professional content
 // Inspired by Tailwind CSS Indigo palette
 

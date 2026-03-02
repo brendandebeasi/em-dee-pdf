@@ -1,4 +1,4 @@
-// Amber theme for md-pdf
+// Amber theme for em-dee-pdf
 // Warm golden tones - Best for: warm, inviting, premium content
 // Inspired by Tailwind CSS Amber palette
 // Use with: --sections flag for contained sections

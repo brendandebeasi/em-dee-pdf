@@ -1,4 +1,4 @@
-// Panels theme for md-pdf
+// Panels theme for em-dee-pdf
 // Full-width colored panel headers with contained content
 // Best for: presentations, executive summaries, structured reports
 // Use with: --sections flag to wrap content in panels

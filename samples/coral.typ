@@ -1,4 +1,4 @@
-// Coral theme for md-pdf
+// Coral theme for em-dee-pdf
 // Warm, modern design with coral/salmon accents
 
 #set page(

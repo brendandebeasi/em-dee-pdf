@@ -1,0 +1,22 @@
+#!/bin/bash
+# Convenience wrapper to run em-dee-pdf via Docker
+#
+# Usage:
+#   em-dee-pdf-docker input.md                    # Outputs input.pdf
+#   em-dee-pdf-docker input.md -o output.pdf      # Custom output
+#   em-dee-pdf-docker input.md --emit-typst       # Output Typst source
+#   em-dee-pdf-docker input.md --theme minimal    # Use minimal theme
+
+set -e
+
+IMAGE="em-dee-pdf:latest"
+
+# Check if image exists
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "Error: Docker image '$IMAGE' not found."
+    echo "Build it first with: ./scripts/docker-build.sh"
+    exit 1
+fi
+
+# Run with current directory mounted
+exec docker run --rm -v "$(pwd):/work" "$IMAGE" "$@"

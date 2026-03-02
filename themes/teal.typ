@@ -1,4 +1,4 @@
-// Teal theme for md-pdf
+// Teal theme for em-dee-pdf
 // Balanced blue-green - Best for: healthcare, wellness, balanced content
 // Inspired by Tailwind CSS Teal palette
 // Use with: --sections flag for contained sections

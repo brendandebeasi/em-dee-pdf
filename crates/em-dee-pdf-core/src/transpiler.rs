@@ -74,6 +74,11 @@ impl Transpiler {
             || doc.front_matter.as_ref().and_then(|fm| fm.toc).unwrap_or(false);
 
         if toc_enabled {
+            // Make outline entries explicit PDF links to their heading locations.
+            // context + link() is required in Typst 0.12+ for in-document navigation.
+            output.push_str(
+                "#show outline.entry: it => context link(it.element.location())[#it]\n"
+            );
             output.push_str(&format!(
                 "#outline(title: \"Contents\", indent: 1em, depth: {})\n",
                 self.toc_depth
@@ -185,9 +190,12 @@ impl Transpiler {
             NodeValue::Heading(heading) => {
                 // Typst uses = for h1, == for h2, etc.
                 let prefix = "=".repeat(heading.level as usize);
+                let text = collect_text(node);
+                let slug = heading_slug(&text);
                 output.push_str(&prefix);
                 output.push(' ');
                 self.visit_children(node, output, temp_files)?;
+                output.push_str(&format!(" <{}>", slug));
                 output.push_str("\n\n");
             }
 
@@ -263,7 +271,13 @@ impl Transpiler {
             }
 
             NodeValue::Link(link) => {
-                output.push_str(&format!("#link(\"{}\")[", escape_string(&link.url)));
+                if link.url.starts_with('#') {
+                    // Internal anchor link — convert to Typst label reference
+                    let slug = heading_slug(&link.url[1..]);
+                    output.push_str(&format!("#link(<{}>)[", slug));
+                } else {
+                    output.push_str(&format!("#link(\"{}\")[", escape_string(&link.url)));
+                }
                 self.visit_children(node, output, temp_files)?;
                 output.push(']');
             }
@@ -642,6 +656,23 @@ impl Transpiler {
             content.trim()
         ))
     }
+}
+
+/// Generate a URL-safe slug from heading text, matching GFM anchor generation.
+fn heading_slug(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .filter_map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == ' ' {
+                Some(c)
+            } else {
+                None
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 /// Escape special Typst characters.

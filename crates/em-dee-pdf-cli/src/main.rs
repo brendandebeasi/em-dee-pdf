@@ -1,16 +1,16 @@
-//! md-pdf CLI - High-quality Markdown to PDF converter
+//! em-dee-pdf CLI - High-quality Markdown to PDF converter
 
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use md_pdf_core::{extract_tables, replace_table, Config, Converter};
+use em_dee_pdf_core::{extract_tables, replace_table, Config, Converter};
 use tracing_subscriber::EnvFilter;
 
 /// High-quality Markdown to PDF converter
 #[derive(Parser, Debug)]
-#[command(name = "md-pdf")]
+#[command(name = "em-dee-pdf")]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Input Markdown file(s). Use '-' for stdin.
@@ -74,11 +74,11 @@ fn main() -> Result<()> {
 
     // Set up logging
     let filter = if cli.verbose {
-        "md_pdf=debug,md_pdf_core=debug"
+        "em_dee_pdf=debug,em_dee_pdf_core=debug"
     } else if cli.quiet {
         "error"
     } else {
-        "md_pdf=info,md_pdf_core=warn"
+        "em_dee_pdf=info,em_dee_pdf_core=warn"
     };
 
     tracing_subscriber::fmt()

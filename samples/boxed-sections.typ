@@ -1,4 +1,4 @@
-// Boxed theme for md-pdf
+// Boxed theme for em-dee-pdf
 // Clean bordered containers with labeled section headers
 // Best for: technical documentation, manuals, structured guides
 // Use with: --sections flag to wrap content in boxes

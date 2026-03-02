@@ -1,10 +1,10 @@
-# md-pdf
+# em-dee-pdf
 
 Rust CLI that converts Markdown files to beautiful PDFs using Typst as the rendering engine.
 
 ## What it does
 
-md-pdf transforms Markdown documents into styled PDFs. The conversion process follows this architecture:
+em-dee-pdf transforms Markdown documents into styled PDFs. The conversion process follows this architecture:
 Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 
 ## Quickstart
@@ -13,44 +13,44 @@ Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 
 Install from source:
 ```bash
-cargo install --path crates/md-pdf-cli
+cargo install --path crates/em-dee-pdf-cli
 ```
 
 Or build the binary:
 ```bash
 cargo build --release
-# Binary at target/release/md-pdf
+# Binary at target/release/em-dee-pdf
 ```
 
 ### Usage Examples
 
 ```bash
 # Basic conversion
-md-pdf document.md
+em-dee-pdf document.md
 
 # Choose a theme
-md-pdf document.md --theme coral
+em-dee-pdf document.md --theme coral
 
 # Multiple files
-md-pdf chapter1.md chapter2.md
+em-dee-pdf chapter1.md chapter2.md
 
 # Pipe from stdin
-cat document.md | md-pdf - -o output.pdf
+cat document.md | em-dee-pdf - -o output.pdf
 
 # See the generated Typst source
-md-pdf document.md --emit-typst
+em-dee-pdf document.md --emit-typst
 
 # Use a container theme with sections
-md-pdf document.md --theme cards --sections
+em-dee-pdf document.md --theme cards --sections
 
 # Sort a table before rendering
-md-pdf report.md --sort-table "0:2:desc:num"
+em-dee-pdf report.md --sort-table "0:2:desc:num"
 ```
 
 ## CLI Reference
 
 ```
-md-pdf [OPTIONS] <INPUT>...
+em-dee-pdf [OPTIONS] <INPUT>...
 
 Arguments:
   <INPUT>...   Input Markdown file(s). Use '-' for stdin.
@@ -127,20 +127,20 @@ Build the image:
 
 Run with Docker:
 ```bash
-docker run --rm -v "$(pwd):/work" md-pdf:latest input.md -o output.pdf
+docker run --rm -v "$(pwd):/work" em-dee-pdf:latest input.md -o output.pdf
 ```
 
 Or use the wrapper script:
 ```bash
-./scripts/md-pdf-docker input.md -o output.pdf
+./scripts/em-dee-pdf-docker input.md -o output.pdf
 ```
 
 ## Library Usage
 
-The core conversion logic is available as a Rust library in the `md-pdf-core` crate.
+The core conversion logic is available as a Rust library in the `em-dee-pdf-core` crate.
 
 ```rust
-use md_pdf_core::{Converter, Config};
+use em_dee_pdf_core::{Converter, Config};
 
 let config = Config::default();
 let converter = Converter::new(config)?;

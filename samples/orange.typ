@@ -1,4 +1,4 @@
-// Orange theme for md-pdf
+// Orange theme for em-dee-pdf
 // Vibrant warm orange - Best for: energetic, bold, startup content
 // Inspired by Tailwind CSS Orange palette
 

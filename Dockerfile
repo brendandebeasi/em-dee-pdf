@@ -1,4 +1,4 @@
-# Multi-stage build for md-pdf
+# Multi-stage build for em-dee-pdf
 
 # Stage 1: Build the Rust binary
 FROM rust:1.84-slim AS builder
@@ -19,8 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy md-pdf binary
-COPY --from=builder /app/target/release/md-pdf /usr/local/bin/
+# Copy em-dee-pdf binary
+COPY --from=builder /app/target/release/em-dee-pdf /usr/local/bin/
 
 # Copy typst binary
 COPY --from=typst /bin/typst /usr/local/bin/
@@ -29,4 +29,4 @@ COPY --from=typst /bin/typst /usr/local/bin/
 WORKDIR /work
 
 # Default entrypoint
-ENTRYPOINT ["md-pdf"]
+ENTRYPOINT ["em-dee-pdf"]

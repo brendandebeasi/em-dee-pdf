@@ -1,5 +1,5 @@
 [package]
-name = "md-pdf-core"
+name = "em-dee-pdf-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

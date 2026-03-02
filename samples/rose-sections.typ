@@ -1,4 +1,4 @@
-// Rose theme for md-pdf
+// Rose theme for em-dee-pdf
 // Elegant creative look with warm pink tones
 // Inspired by Tailwind CSS Rose palette - Best for: creative, design, marketing content
 // Use with: --sections flag for contained sections

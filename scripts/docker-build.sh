@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the md-pdf Docker image
+# Build the em-dee-pdf Docker image
 
 set -e
 
@@ -8,11 +8,11 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_DIR"
 
-docker build -t md-pdf:latest .
+docker build -t em-dee-pdf:latest .
 
 echo ""
-echo "Built md-pdf:latest"
+echo "Built em-dee-pdf:latest"
 echo ""
 echo "Usage:"
-echo "  docker run --rm -v \"\$(pwd):/work\" md-pdf:latest input.md --emit-typst"
-echo "  docker run --rm -v \"\$(pwd):/work\" md-pdf:latest input.md -o output.pdf"
+echo "  docker run --rm -v \"\$(pwd):/work\" em-dee-pdf:latest input.md --emit-typst"
+echo "  docker run --rm -v \"\$(pwd):/work\" em-dee-pdf:latest input.md -o output.pdf"

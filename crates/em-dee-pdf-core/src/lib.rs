@@ -1,4 +1,4 @@
-//! # md-pdf-core
+//! # em-dee-pdf-core
 //!
 //! Core library for converting Markdown to PDF via Typst.
 //!
@@ -11,7 +11,7 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use md_pdf_core::{Converter, Config};
+//! use em_dee_pdf_core::{Converter, Config};
 //!
 //! let config = Config::default();
 //! let converter = Converter::new(config)?;

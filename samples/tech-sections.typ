@@ -1,4 +1,4 @@
-// Tech theme for md-pdf
+// Tech theme for em-dee-pdf
 // Modern technical documentation - inspired by Stripe, Vercel, Linear
 // Clean, precise, code-forward aesthetic
 // Use with: --sections flag for contained sections

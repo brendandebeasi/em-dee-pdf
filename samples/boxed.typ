@@ -1,4 +1,4 @@
-// Boxed theme for md-pdf
+// Boxed theme for em-dee-pdf
 // Clean bordered containers around each H2 section
 // Best for: technical documentation, manuals, structured guides
 

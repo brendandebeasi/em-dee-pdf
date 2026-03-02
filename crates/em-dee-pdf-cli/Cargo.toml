@@ -1,5 +1,5 @@
 [package]
-name = "md-pdf"
+name = "em-dee-pdf"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,11 +9,11 @@ keywords = ["markdown", "pdf", "typst", "converter", "cli"]
 categories = ["command-line-utilities"]
 
 [[bin]]
-name = "md-pdf"
+name = "em-dee-pdf"
 path = "src/main.rs"
 
 [dependencies]
-md-pdf-core = { path = "../md-pdf-core" }
+em-dee-pdf-core = { path = "../em-dee-pdf-core" }
 
 # CLI
 clap = { workspace = true }

@@ -1,4 +1,4 @@
-// Zinc theme for md-pdf
+// Zinc theme for em-dee-pdf
 // Pure neutral gray - Best for: minimal, modern, professional content
 // Inspired by Tailwind CSS Zinc palette (shadcn/ui default)
 

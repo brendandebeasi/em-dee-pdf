@@ -1,8 +1,8 @@
-//! Error types for md-pdf-core.
+//! Error types for em-dee-pdf-core.
 
 use thiserror::Error;
 
-/// Result type alias for md-pdf-core operations.
+/// Result type alias for em-dee-pdf-core operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during Markdown to PDF conversion.

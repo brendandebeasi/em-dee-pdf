@@ -1,4 +1,4 @@
-// Sky theme for md-pdf
+// Sky theme for em-dee-pdf
 // Light airy blue - Best for: friendly, approachable, tech content
 // Inspired by Tailwind CSS Sky palette
 // Use with: --sections flag for contained sections

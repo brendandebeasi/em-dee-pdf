@@ -1,4 +1,4 @@
-// Corporate theme for md-pdf
+// Corporate theme for em-dee-pdf
 // Premium business documents - inspired by McKinsey, BCG, Big 4 reports
 // Authoritative, clean, professional
 

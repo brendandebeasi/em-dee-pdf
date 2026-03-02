@@ -1,4 +1,4 @@
-// Panels theme for md-pdf
+// Panels theme for em-dee-pdf
 // Full-width colored panel headers for each H2 section
 // Best for: presentations, executive summaries, structured reports
 

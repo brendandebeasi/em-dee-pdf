@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/md-pdf-core",
-    "crates/md-pdf-cli",
+    "crates/em-dee-pdf-core",
+    "crates/em-dee-pdf-cli",
 ]
 
 [workspace.package]

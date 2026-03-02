@@ -1,4 +1,4 @@
-// Cards theme for md-pdf
+// Cards theme for em-dee-pdf
 // Each H2 section appears as a distinct card on a subtle background
 // Best for: dashboards, reports, modular content
 

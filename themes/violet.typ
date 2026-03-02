@@ -1,4 +1,4 @@
-// Violet theme for md-pdf
+// Violet theme for em-dee-pdf
 // Rich purple tones - Best for: creative, artistic, luxury content
 // Inspired by Tailwind CSS Violet palette
 // Use with: --sections flag for contained sections

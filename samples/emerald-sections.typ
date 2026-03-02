@@ -1,4 +1,4 @@
-// Emerald theme for md-pdf
+// Emerald theme for em-dee-pdf
 // Fresh modern look with green accents
 // Inspired by Tailwind CSS Emerald palette - Best for: environmental, health, growth content
 // Use with: --sections flag for contained sections

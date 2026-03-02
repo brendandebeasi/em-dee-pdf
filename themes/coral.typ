@@ -1,4 +1,4 @@
-// Coral theme for md-pdf
+// Coral theme for em-dee-pdf
 // Warm, modern design with coral/salmon accents
 // Use with: --sections flag for contained sections
 

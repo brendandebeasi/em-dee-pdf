@@ -1,4 +1,4 @@
-// Stone theme for md-pdf
+// Stone theme for em-dee-pdf
 // Warm neutral gray - Best for: organic, natural, earthy content
 // Inspired by Tailwind CSS Stone palette
 

@@ -1,4 +1,4 @@
-// Slate theme for md-pdf
+// Slate theme for em-dee-pdf
 // Clean professional look with neutral grays and subtle blue undertone
 // Inspired by Tailwind CSS Slate palette - Best for: technical docs, business reports
 // Use with: --sections flag for contained sections

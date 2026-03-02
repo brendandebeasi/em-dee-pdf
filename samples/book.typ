@@ -1,4 +1,4 @@
-// Book theme for md-pdf
+// Book theme for em-dee-pdf
 // Classic book/chapter style with drop caps aesthetic
 
 #set page(

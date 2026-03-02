@@ -183,7 +183,7 @@
 // =============================================================================
 // LISTS
 // =============================================================================
-#set list(indent: 1.25em, body-indent: 0.5em, marker: (text(fill: secondary, weight: "bold")[-->], text(fill: accent)[--], text(fill: text-muted)[>]))
+#set list(indent: 1.25em, body-indent: 0.5em, marker: (text(fill: secondary, weight: "bold")[•], text(fill: accent)[–], text(fill: text-muted)[‣]))
 #set enum(indent: 1.25em, body-indent: 0.5em)
 
 // =============================================================================

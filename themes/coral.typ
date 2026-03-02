@@ -133,9 +133,9 @@
   indent: 1.5em,
   body-indent: 0.5em,
   marker: (
-    text(fill: rgb("#E94845"))[-->],
-    text(fill: rgb("#f87171"))[--],
-    text(fill: rgb("#fca5a5"))[-],
+    text(fill: rgb("#E94845"))[•],
+    text(fill: rgb("#f87171"))[–],
+    text(fill: rgb("#fca5a5"))[‣],
   ),
 )
 #set enum(indent: 1.5em, body-indent: 0.5em)

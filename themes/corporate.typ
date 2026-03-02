@@ -195,9 +195,9 @@
   indent: 1.25em,
   body-indent: 0.5em,
   marker: (
-    text(fill: navy, weight: "bold")[\*],
-    text(fill: navy-muted)[-],
-    text(fill: text-muted)[>],
+    text(fill: navy, weight: "bold")[•],
+    text(fill: navy-muted)[–],
+    text(fill: text-muted)[‣],
   ),
 )
 

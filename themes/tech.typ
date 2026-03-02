@@ -187,9 +187,9 @@
   indent: 1.25em,
   body-indent: 0.5em,
   marker: (
-    text(fill: accent, weight: "bold")[>],
-    text(fill: text-secondary)[-],
-    text(fill: text-muted)[+],
+    text(fill: accent, weight: "bold")[•],
+    text(fill: text-secondary)[–],
+    text(fill: text-muted)[‣],
   ),
 )
 

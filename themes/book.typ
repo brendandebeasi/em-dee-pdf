@@ -124,7 +124,7 @@
 #set list(
   indent: 1.5em,
   body-indent: 0.5em,
-  marker: ([-], [\*], [.]),
+  marker: ([•], [–], [‣]),
 )
 #set enum(indent: 1.5em, body-indent: 0.5em)
 

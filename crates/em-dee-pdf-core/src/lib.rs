@@ -23,18 +23,18 @@ pub mod config;
 pub mod error;
 pub mod mermaid;
 pub mod parser;
+pub mod renderer;
 pub mod tables;
 pub mod theme;
 pub mod transpiler;
-pub mod renderer;
 
 pub use config::Config;
 pub use error::{Error, Result};
 pub use parser::Parser;
-pub use tables::{extract_tables, ExtractedTable, Alignment, replace_table};
+pub use renderer::Renderer;
+pub use tables::{extract_tables, replace_table, Alignment, ExtractedTable};
 pub use theme::Theme;
 pub use transpiler::{TranspileResult, Transpiler};
-pub use renderer::Renderer;
 
 /// High-level converter that orchestrates the full pipeline.
 pub struct Converter {
@@ -71,10 +71,13 @@ impl Converter {
         let document = self.parser.parse(markdown)?;
 
         // Transpile AST to Typst source (with temp file tracking for mermaid)
-        let transpile_result = self.transpiler.transpile_with_resources(&document, base_path)?;
+        let transpile_result = self
+            .transpiler
+            .transpile_with_resources(&document, base_path)?;
 
-        // Render Typst to PDF (temp_files stay alive until this completes)
-        let pdf_bytes = self.renderer.render(&transpile_result.source)?;
+        let pdf_bytes = self
+            .renderer
+            .render(&transpile_result.source, self.config.output.compress)?;
 
         // temp_files are dropped here, after rendering is complete
         drop(transpile_result.temp_files);

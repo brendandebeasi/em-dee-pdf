@@ -52,32 +52,46 @@ impl Renderer {
     }
 
     /// Render Typst source to PDF bytes.
-    pub fn render(&self, typst_source: &str) -> Result<Vec<u8>> {
-        // Convert font data to references for the builder
+    pub fn render(&self, typst_source: &str, compress: bool) -> Result<Vec<u8>> {
         let font_refs: Vec<&[u8]> = self.fonts.iter().map(|f| f.as_slice()).collect();
 
-        // Create the Typst engine with the source
-        // Enable file system resolver to allow reading temp files (for mermaid images)
         let engine = TypstEngine::builder()
             .main_file(typst_source)
             .fonts(font_refs)
-            .with_file_system_resolver("/")  // Allow access to absolute paths
+            .with_file_system_resolver("/")
             .build();
 
-        // Compile the document (without template input)
         let result = engine.compile();
 
-        // Check for compilation errors
-        let doc = result.output.map_err(|e| {
-            Error::Render(format!("Typst compilation failed: {:?}", e))
-        })?;
+        let doc = result
+            .output
+            .map_err(|e| Error::Render(format!("Typst compilation failed: {:?}", e)))?;
 
-        // Export to PDF
-        let pdf_options = typst_pdf::PdfOptions::default();
+        let pdf_options = typst_pdf::PdfOptions {
+            tagged: !compress,
+            ..typst_pdf::PdfOptions::default()
+        };
         let pdf_bytes = typst_pdf::pdf(&doc, &pdf_options)
             .map_err(|e| Error::Render(format!("PDF export failed: {:?}", e)))?;
 
-        Ok(pdf_bytes)
+        if compress {
+            Self::compress_pdf(pdf_bytes)
+        } else {
+            Ok(pdf_bytes)
+        }
+    }
+
+    fn compress_pdf(pdf_bytes: Vec<u8>) -> Result<Vec<u8>> {
+        let mut doc = lopdf::Document::load_mem(&pdf_bytes)
+            .map_err(|e| Error::Render(format!("Failed to load PDF for compression: {}", e)))?;
+
+        doc.compress();
+
+        let mut out = Vec::new();
+        doc.save_to(&mut out)
+            .map_err(|e| Error::Render(format!("Failed to save compressed PDF: {}", e)))?;
+
+        Ok(out)
     }
 
     /// Load fonts from multiple paths.

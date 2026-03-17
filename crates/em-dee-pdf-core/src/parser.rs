@@ -104,7 +104,11 @@ impl Parser {
             let line = line.trim();
             if let Some((key, value)) = line.split_once(':') {
                 let key = key.trim().to_lowercase();
-                let value = value.trim().trim_matches('"').trim_matches('\'').to_string();
+                let value = value
+                    .trim()
+                    .trim_matches('"')
+                    .trim_matches('\'')
+                    .to_string();
 
                 match key.as_str() {
                     "title" => fm.title = Some(value),

@@ -25,6 +25,7 @@ Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 - **Table of contents** — auto-generated with configurable depth
 - **Front matter** — YAML metadata for title, author, date
 - **Mermaid diagrams** — optional rendering via mermaid-cli
+- **PDF compression** — reduce output size by ~30% with `--compress`
 - **Stdin/stdout piping** — composable with other CLI tools
 - **Custom themes** — pass any `.typ` file for full control over styling
 
@@ -66,6 +67,13 @@ em-dee-pdf document.md --theme cards --sections
 
 # Sort a table before rendering
 em-dee-pdf report.md --sort-table "0:2:desc:num"
+
+# Print-friendly output (no background fills)
+em-dee-pdf document.md --no-background
+
+# Compress the output PDF
+em-dee-pdf document.md --compress
+
 ```
 
 ## CLI Reference
@@ -89,6 +97,8 @@ Options:
       --sort-table <SORT_SPEC> Sort table by column. Format: "table_index:column_index:asc|desc[:num|str]"
       --list-tables            List tables in the markdown (useful for finding indices)
       --mermaid                Enable mermaid diagram rendering (requires mermaid-cli)
+      --no-background          Remove background fills for print-friendly output
+      --compress               Compress the resulting PDF (disables tagging, deflate-compresses streams)
   -h, --help                   Print help
   -V, --version                Print version
 ```
@@ -146,6 +156,8 @@ page_size = "us-letter"
 toc = false
 toc_depth = 3
 page_numbers = true
+no_background = false
+compress = false
 section_containers = false
 
 [fonts]

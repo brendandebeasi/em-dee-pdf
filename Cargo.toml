@@ -42,6 +42,9 @@ tokio = { version = "1", features = ["rt", "fs", "io-util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# PDF compression
+lopdf = "0.34"
+
 # Utilities
 dirs = "6"
 tempfile = "3"

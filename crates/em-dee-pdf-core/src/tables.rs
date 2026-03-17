@@ -49,7 +49,9 @@ impl ExtractedTable {
                 // Try to parse as numbers
                 let num_a: f64 = val_a.trim().parse().unwrap_or(f64::NAN);
                 let num_b: f64 = val_b.trim().parse().unwrap_or(f64::NAN);
-                num_a.partial_cmp(&num_b).unwrap_or(std::cmp::Ordering::Equal)
+                num_a
+                    .partial_cmp(&num_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             } else {
                 val_a.cmp(val_b)
             };

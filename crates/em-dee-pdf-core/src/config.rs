@@ -83,6 +83,14 @@ pub struct OutputConfig {
     /// Whether to wrap H2 sections in containers.
     /// When enabled, content between H2 headings is wrapped in #md-section[] blocks.
     pub section_containers: bool,
+
+    /// Remove background fills for print-friendly output.
+    /// Strips page, code block, table, and container backgrounds.
+    pub no_background: bool,
+
+    /// Compress the resulting PDF and embedded resources.
+    /// Disables PDF tagging and applies deflate compression to PDF streams.
+    pub compress: bool,
 }
 
 impl Default for OutputConfig {
@@ -94,6 +102,8 @@ impl Default for OutputConfig {
             page_numbers: true,
             page_number_position: PageNumberPosition::BottomCenter,
             section_containers: false,
+            no_background: false,
+            compress: false,
         }
     }
 }

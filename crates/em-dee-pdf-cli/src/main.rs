@@ -67,6 +67,14 @@ struct Cli {
     /// Enable mermaid diagram rendering (requires mermaid-cli)
     #[arg(long)]
     mermaid: bool,
+
+    /// Remove background fills for print-friendly output
+    #[arg(long)]
+    no_background: bool,
+
+    /// Compress the resulting PDF (disables tagging, deflate-compresses streams)
+    #[arg(long)]
+    compress: bool,
 }
 
 fn main() -> Result<()> {
@@ -100,6 +108,8 @@ fn main() -> Result<()> {
     config.output.page_size = cli.page_size;
     config.output.section_containers = cli.sections;
     config.extensions.mermaid = cli.mermaid;
+    config.output.no_background = cli.no_background;
+    config.output.compress = cli.compress;
 
     // Create converter
     let converter = Converter::new(config).context("Failed to create converter")?;
@@ -125,9 +135,10 @@ fn main() -> Result<()> {
             std::env::current_dir().ok()
         } else {
             // Use the parent directory of the input file
-            input_path.canonicalize().ok().and_then(|p| {
-                p.parent().map(|d| d.to_path_buf())
-            })
+            input_path
+                .canonicalize()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
         };
 
         // Handle --list-tables

@@ -2,13 +2,13 @@
 
 use std::path::Path;
 
-use comrak::nodes::{AstNode, ListType, NodeValue, TableAlignment};
-use comrak::{parse_document, Arena};
 use crate::config::Config;
 use crate::error::Result;
 use crate::mermaid;
 use crate::parser::{collect_text, ParsedDocument};
 use crate::theme::Theme;
+use comrak::nodes::{AstNode, ListType, NodeValue, TableAlignment};
+use comrak::{parse_document, Arena};
 
 /// Result of transpilation, including the Typst source and any temp files
 /// that must be kept alive until rendering completes.
@@ -34,6 +34,7 @@ pub struct Transpiler {
     toc_depth: u8,
     section_containers: bool,
     mermaid_enabled: bool,
+    no_background: bool,
 }
 
 impl Transpiler {
@@ -45,6 +46,7 @@ impl Transpiler {
             toc_depth: config.output.toc_depth,
             section_containers: config.output.section_containers,
             mermaid_enabled: config.extensions.mermaid,
+            no_background: config.output.no_background,
         }
     }
 
@@ -59,7 +61,11 @@ impl Transpiler {
 
     /// Transpile a parsed document to Typst source with resource tracking.
     /// Returns the source and temp files that must be kept alive during rendering.
-    pub fn transpile_with_resources(&self, doc: &ParsedDocument, base_path: Option<&Path>) -> Result<TranspileResult> {
+    pub fn transpile_with_resources(
+        &self,
+        doc: &ParsedDocument,
+        base_path: Option<&Path>,
+    ) -> Result<TranspileResult> {
         let mut output = String::new();
         let mut ctx = TranspileCtx {
             base_path,
@@ -70,23 +76,61 @@ impl Transpiler {
         output.push_str(self.theme.preamble());
         output.push_str("\n\n");
 
+        // Emit background-stripping overrides for print-friendly output
+        if self.no_background {
+            output.push_str("// --- no-background overrides ---\n");
+            // Strip page background
+            output.push_str("#set page(fill: none)\n");
+            // Strip code block backgrounds, use light styling for print
+            output.push_str("#show raw.where(block: true): it => {\n");
+            output.push_str("  set text(fill: rgb(\"#1a1a1a\"))\n");
+            output.push_str("  set par(justify: false)\n");
+            output.push_str("  block(fill: none, stroke: 0.5pt + rgb(\"#cccccc\"), inset: 16pt, radius: 6pt, width: 100%, above: 1em, below: 1em, it)\n");
+            output.push_str("}\n");
+            // Strip inline code backgrounds
+            output.push_str("#show raw.where(block: false): box.with(fill: none, inset: (x: 4pt, y: 2pt), outset: (y: 2pt), radius: 3pt)\n");
+            // Strip table fills
+            output.push_str("#set table(fill: none)\n");
+            output.push_str("#show table.cell.where(y: 0): set text(fill: rgb(\"#1a1a1a\"))\n");
+            // Strip blockquote fills
+            output.push_str("#show quote: it => {\n");
+            output.push_str("  set text(style: \"italic\")\n");
+            output.push_str("  block(fill: none, stroke: (left: 3pt + rgb(\"#888888\")), inset: (left: 16pt, right: 16pt, y: 12pt), radius: (right: 4pt), above: 1em, below: 1em, it)\n");
+            output.push_str("}\n");
+            // Redefine section container without fill
+            output.push_str("#let md-section(content) = {\n");
+            output.push_str("  block(fill: none, stroke: (left: 3pt + rgb(\"#888888\"), rest: 0.5pt + rgb(\"#cccccc\")), radius: (right: 6pt), inset: (x: 20pt, top: 16pt, bottom: 20pt), width: 100%, above: 1.5em, below: 1.5em, breakable: true, content)\n");
+            output.push_str("}\n");
+            output.push_str("// --- end no-background overrides ---\n\n");
+        }
+
         // Ensure math mode uses a proper math font (the theme's text font may lack math glyphs)
         output.push_str("#show math.equation: set text(font: (\"New Computer Modern Math\", \"STIX Two Math\", \"Latin Modern Math\"))\n");
 
         // Emit document metadata if available
         if let Some(ref fm) = doc.front_matter {
             if let Some(ref title) = fm.title {
-                output.push_str(&format!("#set document(title: \"{}\")\n", escape_string(title)));
+                output.push_str(&format!(
+                    "#set document(title: \"{}\")\n",
+                    escape_string(title)
+                ));
             }
             if let Some(ref author) = fm.author {
-                output.push_str(&format!("#set document(author: \"{}\")\n", escape_string(author)));
+                output.push_str(&format!(
+                    "#set document(author: \"{}\")\n",
+                    escape_string(author)
+                ));
             }
             output.push('\n');
         }
 
         // Emit table of contents if requested
         let toc_enabled = self.generate_toc
-            || doc.front_matter.as_ref().and_then(|fm| fm.toc).unwrap_or(false);
+            || doc
+                .front_matter
+                .as_ref()
+                .and_then(|fm| fm.toc)
+                .unwrap_or(false);
 
         if toc_enabled {
             // Remove dot leaders since entries use underline styling.
@@ -527,11 +571,7 @@ impl Transpiler {
     }
 
     /// Render a mermaid diagram to Typst code.
-    fn render_mermaid(
-        &self,
-        mermaid_source: &str,
-        ctx: &mut TranspileCtx<'_>,
-    ) -> String {
+    fn render_mermaid(&self, mermaid_source: &str, ctx: &mut TranspileCtx<'_>) -> String {
         // Check if mmdc is available
         if !mermaid::is_mmdc_available() {
             tracing::warn!("mermaid-cli (mmdc) not available, using placeholder");
@@ -584,7 +624,8 @@ impl Transpiler {
                             // Extract the alert type
                             if let Some(end) = trimmed.find(']') {
                                 let alert_type = &trimmed[2..end];
-                                let valid_types = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"];
+                                let valid_types =
+                                    ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"];
                                 if valid_types.contains(&alert_type.to_uppercase().as_str()) {
                                     return Some(alert_type.to_uppercase());
                                 }
@@ -608,11 +649,11 @@ impl Transpiler {
     ) -> Result<String> {
         // Icons use Unicode symbols to avoid escaping issues
         let (bg_color, border_color, icon, title) = match alert_type {
-            "NOTE" => ("#e7f3ff", "#0969da", "\u{2139}", "Note"),        // ℹ
-            "TIP" => ("#d4edda", "#1a7f37", "\u{2713}", "Tip"),          // ✓
+            "NOTE" => ("#e7f3ff", "#0969da", "\u{2139}", "Note"), // ℹ
+            "TIP" => ("#d4edda", "#1a7f37", "\u{2713}", "Tip"),   // ✓
             "IMPORTANT" => ("#f3e8ff", "#8250df", "\u{2757}", "Important"), // ❗
-            "WARNING" => ("#fff8e6", "#9a6700", "\u{26A0}", "Warning"),  // ⚠
-            "CAUTION" => ("#ffebe9", "#cf222e", "\u{2718}", "Caution"),  // ✘
+            "WARNING" => ("#fff8e6", "#9a6700", "\u{26A0}", "Warning"), // ⚠
+            "CAUTION" => ("#ffebe9", "#cf222e", "\u{2718}", "Caution"), // ✘
             _ => ("#f6f8fa", "#656d76", "\u{2139}", "Note"),
         };
 
@@ -655,9 +696,15 @@ impl Transpiler {
             self.visit_node(child, &mut content, ctx)?;
         }
 
+        let fill_str = if self.no_background {
+            "none".to_string()
+        } else {
+            format!("rgb(\"{}\")", bg_color)
+        };
+
         Ok(format!(
             r##"#block(
-  fill: rgb("{}"),
+  fill: {},
   stroke: (left: 3pt + rgb("{}")),
   radius: 4pt,
   inset: (x: 14pt, y: 10pt),
@@ -671,7 +718,11 @@ impl Transpiler {
 ]
 
 "##,
-            bg_color, border_color, border_color, icon, title,
+            fill_str,
+            border_color,
+            border_color,
+            icon,
+            title,
             content.trim()
         ))
     }
@@ -724,6 +775,7 @@ fn resolve_image_path(url: &str, base_path: Option<&Path>) -> String {
 /// Escape special Typst characters.
 fn escape_typst(s: &str) -> String {
     s.replace('\\', "\\\\")
+        .replace("//", "\\/\\/")
         .replace('*', "\\*")
         .replace('_', "\\_")
         .replace('#', "\\#")
@@ -743,7 +795,13 @@ fn escape_string(s: &str) -> String {
 /// Escape string for use as a Typst label.
 fn escape_label(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -931,7 +989,7 @@ fn convert_braces_to_parens(s: &str) -> String {
     let mut result = s.to_string();
     for func in func_names {
         // Replace func{...} with func(...)
-        let open = format!("{}{{" , func);
+        let open = format!("{}{{", func);
         while let Some(start) = result.find(&open) {
             let brace_start = start + func.len();
             // Find the matching closing brace
@@ -967,7 +1025,6 @@ fn convert_braces_to_parens(s: &str) -> String {
     result
 }
 
-
 /// Add spaces between consecutive single-letter variables in Typst math.
 /// Preserves known Typst math keywords (sqrt, integral, plus.minus, etc.)
 /// by scanning for word boundaries and only splitting runs of single letters.
@@ -975,19 +1032,16 @@ fn add_spaces_between_variables(s: &str) -> String {
     // Known Typst math identifiers that should NOT be split
     let keywords: &[&str] = &[
         // Math operators and functions
-        "sqrt", "integral", "infinity", "plus", "minus", "times", "div",
-        "dot", "equiv", "approx", "tilde", "prop", "double", "triple",
-        "cont", "sum", "product", "lim", "diff", "gradient",
-        "sin", "cos", "tan", "log", "ln", "exp", "max", "min", "sup", "inf",
-        "arrow", "subset", "supset", "union", "sect", "nothing",
-        "forall", "exists", "dots", "not",
+        "sqrt", "integral", "infinity", "plus", "minus", "times", "div", "dot", "equiv", "approx",
+        "tilde", "prop", "double", "triple", "cont", "sum", "product", "lim", "diff", "gradient",
+        "sin", "cos", "tan", "log", "ln", "exp", "max", "min", "sup", "inf", "arrow", "subset",
+        "supset", "union", "sect", "nothing", "forall", "exists", "dots", "not",
         // Greek letters (Typst built-ins)
-        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta",
-        "iota", "kappa", "lambda", "mu", "nu", "xi", "pi", "rho",
-        "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega",
-        "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta",
-        "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Pi", "Rho",
-        "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega",
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa",
+        "lambda", "mu", "nu", "xi", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi",
+        "omega", "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota",
+        "Kappa", "Lambda", "Mu", "Nu", "Xi", "Pi", "Rho", "Sigma", "Tau", "Upsilon", "Phi", "Chi",
+        "Psi", "Omega",
     ];
 
     let mut result = String::new();

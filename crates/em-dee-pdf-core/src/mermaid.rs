@@ -38,10 +38,14 @@ pub fn render_to_svg(mermaid_source: &str) -> Result<String> {
     // Run mmdc
     let output = Command::new("mmdc")
         .args([
-            "-i", input_file.path().to_str().unwrap(),
-            "-o", output_file.path().to_str().unwrap(),
-            "-e", "svg",
-            "--backgroundColor", "transparent",
+            "-i",
+            input_file.path().to_str().unwrap(),
+            "-o",
+            output_file.path().to_str().unwrap(),
+            "-e",
+            "svg",
+            "--backgroundColor",
+            "transparent",
         ])
         .output()
         .map_err(|e| Error::Render(format!("Failed to run mmdc: {}", e)))?;
@@ -74,11 +78,16 @@ pub fn render_to_png(mermaid_source: &str) -> Result<Vec<u8>> {
     // Run mmdc
     let output = Command::new("mmdc")
         .args([
-            "-i", input_file.path().to_str().unwrap(),
-            "-o", output_file.path().to_str().unwrap(),
-            "-e", "png",
-            "--backgroundColor", "white",
-            "-s", "2", // scale factor for better quality
+            "-i",
+            input_file.path().to_str().unwrap(),
+            "-o",
+            output_file.path().to_str().unwrap(),
+            "-e",
+            "png",
+            "--backgroundColor",
+            "white",
+            "-s",
+            "2", // scale factor for better quality
         ])
         .output()
         .map_err(|e| Error::Render(format!("Failed to run mmdc: {}", e)))?;
@@ -202,10 +211,7 @@ pub fn render_and_embed(mermaid_source: &str) -> Result<(String, NamedTempFile)>
     // Escape backslashes for Windows paths
     let escaped_path = path.replace('\\', "/");
 
-    let typst_code = format!(
-        "#figure(\n  image(\"{}\"),\n)\n\n",
-        escaped_path
-    );
+    let typst_code = format!("#figure(\n  image(\"{}\"),\n)\n\n", escaped_path);
 
     Ok((typst_code, file))
 }

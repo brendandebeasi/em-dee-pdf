@@ -33,7 +33,12 @@ Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 
 ### Installation
 
-Install from source:
+**Install the latest release** (macOS, Apple Silicon or Intel):
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/brendandebeasi/em-dee-pdf/releases/latest/download/em-dee-pdf-installer.sh | sh
+```
+
+**Install from source** (any platform with Rust):
 ```bash
 cargo install --path crates/em-dee-pdf-cli
 ```

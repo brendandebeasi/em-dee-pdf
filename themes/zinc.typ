@@ -66,7 +66,7 @@
 )
 
 #set par(leading: 0.75em, justify: true)
-#show raw: set par(justify: false)
+#show raw.where(block: true): set par(justify: false)
 
 // =============================================================================
 // HEADINGS

@@ -184,6 +184,27 @@ syntax_highlighting = true
 mermaid = false
 ```
 
+## Cover page
+
+Wrap any Markdown in `<!-- cover -->` / `<!-- /cover -->` (each on its own line) to render it as page 1, ahead of the table of contents:
+
+```markdown
+<!-- cover align="top" -->
+# Quarterly Report
+
+**Q2 2026**
+
+Prepared by Acme · 3 June 2026
+<!-- /cover -->
+
+## First Section
+...
+```
+
+- The cover's headings are kept out of the table of contents.
+- `align="…"` (optional) positions the content on the page using `top`/`horizon`/`bottom` and `left`/`center`/`right`, in any order — e.g. `align="bottom right"` or shorthand `<!-- cover top -->`. Default is vertically centered.
+- Themes can override the `md-cover(body, alignment: …)` function to style their own cover (rules, logos, background); the alignment is passed through.
+
 ## Math & LaTeX
 
 em-dee-pdf supports LaTeX math syntax via Typst's math engine. Enable math in your config (`math = true`, on by default) or just use dollar signs in your Markdown:

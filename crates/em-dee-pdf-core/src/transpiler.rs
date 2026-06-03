@@ -73,8 +73,12 @@ impl Transpiler {
         };
 
         // Default cover-page wrapper. Defined before the theme preamble so a
-        // theme can override `md-cover` to style its own cover.
-        output.push_str("#let md-cover(body) = block(width: 100%, breakable: false, body)\n\n");
+        // theme can override `md-cover` to style its own cover. `alignment`
+        // controls where the content sits on the page (e.g. top, horizon,
+        // bottom + right); the cover block fills the page so it has effect.
+        output.push_str(
+            "#let md-cover(body, alignment: horizon) = block(width: 100%, height: 100%, breakable: false)[#set align(alignment); #body]\n\n",
+        );
 
         // Emit theme preamble
         output.push_str(self.theme.preamble());
@@ -130,15 +134,22 @@ impl Transpiler {
 
         // Extract an optional cover-page block and emit it first, ahead of the
         // table of contents, so it lands on page 1.
-        let (cover_md, body_source) = split_cover(&doc.source);
-        if let Some(cover) = cover_md {
+        let (cover, body_source) = split_cover(&doc.source);
+        if let Some(cover) = cover {
             let cover_arena = Arena::new();
-            let cover_root = parse_document(&cover_arena, &cover, &doc.options);
+            let cover_root = parse_document(&cover_arena, &cover.content, &doc.options);
             let mut cover_body = String::new();
             self.visit_children(cover_root, &mut cover_body, &mut ctx)?;
+            // Pass the alignment through to md-cover when the marker specified one.
+            let align_arg = match &cover.alignment {
+                Some(a) => format!("(alignment: {})", a),
+                None => String::new(),
+            };
             // Keep cover headings out of the outline; the page break sends the
             // rest of the document to page 2.
-            output.push_str("#[\n#set heading(outlined: false)\n#md-cover[\n");
+            output.push_str("#[\n#set heading(outlined: false)\n#md-cover");
+            output.push_str(&align_arg);
+            output.push_str("[\n");
             output.push_str(&cover_body);
             output.push_str("\n]\n]\n#pagebreak(weak: false)\n\n");
         }
@@ -747,10 +758,20 @@ impl Transpiler {
     }
 }
 
+/// An extracted cover-page block.
+struct CoverBlock {
+    /// Inner Markdown of the cover.
+    content: String,
+    /// Typst alignment expression parsed from the opening marker, if any
+    /// (e.g. `top`, `bottom + right`).
+    alignment: Option<String>,
+}
+
 /// Split out an optional cover-page block delimited by `<!-- cover -->` and
-/// `<!-- /cover -->`, each on its own line. Returns the inner cover markdown (if
-/// present and non-empty) and the document source with the block removed.
-fn split_cover(source: &str) -> (Option<String>, String) {
+/// `<!-- /cover -->`, each on its own line. The opening marker may carry an
+/// alignment, e.g. `<!-- cover align="top left" -->` or `<!-- cover top -->`.
+/// Returns the cover (if present and non-empty) and the source with it removed.
+fn split_cover(source: &str) -> (Option<CoverBlock>, String) {
     let compact = |line: &str| -> String {
         line.chars()
             .filter(|c| !c.is_whitespace())
@@ -764,7 +785,8 @@ fn split_cover(source: &str) -> (Option<String>, String) {
     for (i, line) in lines.iter().enumerate() {
         let c = compact(line);
         if open.is_none() {
-            if c == "<!--cover-->" {
+            // Opens on `<!--cover-->` and any `<!--cover ...-->` variant.
+            if c.starts_with("<!--cover") && c.ends_with("-->") {
                 open = Some(i);
             }
         } else if c == "<!--/cover-->" || c == "<!--endcover-->" {
@@ -775,14 +797,54 @@ fn split_cover(source: &str) -> (Option<String>, String) {
 
     match (open, close) {
         (Some(o), Some(cl)) => {
-            let cover = lines[o + 1..cl].join("\n").trim().to_string();
+            let content = lines[o + 1..cl].join("\n").trim().to_string();
             let mut body = Vec::with_capacity(lines.len());
             body.extend_from_slice(&lines[..o]);
             body.extend_from_slice(&lines[cl + 1..]);
-            let cover = if cover.is_empty() { None } else { Some(cover) };
+            let cover = if content.is_empty() {
+                None
+            } else {
+                Some(CoverBlock {
+                    content,
+                    alignment: parse_cover_alignment(lines[o]),
+                })
+            };
             (cover, body.join("\n"))
         }
         _ => (None, source.to_string()),
+    }
+}
+
+/// Parse an alignment from a cover opening marker into a Typst alignment
+/// expression. Recognises horizontal (`left`/`center`/`right`) and vertical
+/// (`top`/`horizon`/`bottom`) keywords in any order; returns `None` if the
+/// marker names no alignment.
+fn parse_cover_alignment(marker: &str) -> Option<String> {
+    let cleaned = marker
+        .to_lowercase()
+        .replace("<!--", " ")
+        .replace("-->", " ")
+        .replace(['=', ':', '"', '\'', ','], " ");
+
+    let mut horizontal = None;
+    let mut vertical = None;
+    for token in cleaned.split_whitespace() {
+        match token {
+            "left" => horizontal = Some("left"),
+            "center" | "centre" => horizontal = Some("center"),
+            "right" => horizontal = Some("right"),
+            "top" => vertical = Some("top"),
+            "horizon" | "middle" => vertical = Some("horizon"),
+            "bottom" => vertical = Some("bottom"),
+            _ => {} // ignore "cover", "align", and anything unrecognised
+        }
+    }
+
+    let parts: Vec<&str> = [horizontal, vertical].into_iter().flatten().collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(" + "))
     }
 }
 
@@ -1147,7 +1209,9 @@ mod tests {
     fn split_cover_extracts_block_and_strips_it_from_body() {
         let src = "---\ntitle: X\n---\n\n<!-- cover -->\n# Title\n\nSubtitle\n<!-- /cover -->\n\n## Section\n\nBody.\n";
         let (cover, body) = split_cover(src);
-        assert_eq!(cover.as_deref(), Some("# Title\n\nSubtitle"));
+        let cover = cover.expect("cover present");
+        assert_eq!(cover.content, "# Title\n\nSubtitle");
+        assert_eq!(cover.alignment, None);
         assert!(body.contains("## Section"));
         assert!(!body.contains("# Title"));
         assert!(!body.contains("cover"));
@@ -1156,10 +1220,32 @@ mod tests {
     #[test]
     fn split_cover_tolerates_spacing_and_no_block() {
         let (cover, _) = split_cover("<!--cover-->\nHi\n<!--/cover-->\n");
-        assert_eq!(cover.as_deref(), Some("Hi"));
+        assert_eq!(cover.unwrap().content, "Hi");
 
         let (none, body) = split_cover("# Just a doc\n\nNo cover here.");
         assert!(none.is_none());
         assert_eq!(body, "# Just a doc\n\nNo cover here.");
+    }
+
+    #[test]
+    fn split_cover_parses_alignment_from_marker() {
+        let (cover, _) = split_cover("<!-- cover align=\"top left\" -->\nHi\n<!-- /cover -->\n");
+        assert_eq!(cover.unwrap().alignment.as_deref(), Some("left + top"));
+
+        let (cover, _) = split_cover("<!-- cover bottom right -->\nHi\n<!-- /cover -->\n");
+        assert_eq!(cover.unwrap().alignment.as_deref(), Some("right + bottom"));
+    }
+
+    #[test]
+    fn parse_cover_alignment_handles_keywords_and_junk() {
+        assert_eq!(
+            parse_cover_alignment("<!-- cover top -->").as_deref(),
+            Some("top")
+        );
+        assert_eq!(parse_cover_alignment("<!-- cover -->"), None);
+        assert_eq!(
+            parse_cover_alignment("<!-- cover align=\"center horizon\" -->").as_deref(),
+            Some("center + horizon")
+        );
     }
 }

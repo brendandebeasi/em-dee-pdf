@@ -72,6 +72,10 @@ impl Transpiler {
             temp_files: Vec::new(),
         };
 
+        // Default cover-page wrapper. Defined before the theme preamble so a
+        // theme can override `md-cover` to style its own cover.
+        output.push_str("#let md-cover(body) = block(width: 100%, breakable: false, body)\n\n");
+
         // Emit theme preamble
         output.push_str(self.theme.preamble());
         output.push_str("\n\n");
@@ -124,6 +128,21 @@ impl Transpiler {
             output.push('\n');
         }
 
+        // Extract an optional cover-page block and emit it first, ahead of the
+        // table of contents, so it lands on page 1.
+        let (cover_md, body_source) = split_cover(&doc.source);
+        if let Some(cover) = cover_md {
+            let cover_arena = Arena::new();
+            let cover_root = parse_document(&cover_arena, &cover, &doc.options);
+            let mut cover_body = String::new();
+            self.visit_children(cover_root, &mut cover_body, &mut ctx)?;
+            // Keep cover headings out of the outline; the page break sends the
+            // rest of the document to page 2.
+            output.push_str("#[\n#set heading(outlined: false)\n#md-cover[\n");
+            output.push_str(&cover_body);
+            output.push_str("\n]\n]\n#pagebreak(weak: false)\n\n");
+        }
+
         // Emit table of contents if requested
         let toc_enabled = self.generate_toc
             || doc
@@ -148,9 +167,9 @@ impl Transpiler {
             output.push_str("#pagebreak()\n\n");
         }
 
-        // Parse and transpile document content
+        // Parse and transpile document content (cover block already removed).
         let arena = Arena::new();
-        let root = parse_document(&arena, &doc.source, &doc.options);
+        let root = parse_document(&arena, &body_source, &doc.options);
 
         if self.section_containers {
             self.visit_with_sections(root, &mut output, &mut ctx)?;
@@ -728,6 +747,45 @@ impl Transpiler {
     }
 }
 
+/// Split out an optional cover-page block delimited by `<!-- cover -->` and
+/// `<!-- /cover -->`, each on its own line. Returns the inner cover markdown (if
+/// present and non-empty) and the document source with the block removed.
+fn split_cover(source: &str) -> (Option<String>, String) {
+    let compact = |line: &str| -> String {
+        line.chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+            .to_lowercase()
+    };
+
+    let lines: Vec<&str> = source.lines().collect();
+    let mut open = None;
+    let mut close = None;
+    for (i, line) in lines.iter().enumerate() {
+        let c = compact(line);
+        if open.is_none() {
+            if c == "<!--cover-->" {
+                open = Some(i);
+            }
+        } else if c == "<!--/cover-->" || c == "<!--endcover-->" {
+            close = Some(i);
+            break;
+        }
+    }
+
+    match (open, close) {
+        (Some(o), Some(cl)) => {
+            let cover = lines[o + 1..cl].join("\n").trim().to_string();
+            let mut body = Vec::with_capacity(lines.len());
+            body.extend_from_slice(&lines[..o]);
+            body.extend_from_slice(&lines[cl + 1..]);
+            let cover = if cover.is_empty() { None } else { Some(cover) };
+            (cover, body.join("\n"))
+        }
+        _ => (None, source.to_string()),
+    }
+}
+
 /// Generate a URL-safe slug from heading text, matching GFM anchor generation.
 fn heading_slug(text: &str) -> String {
     text.to_lowercase()
@@ -1079,4 +1137,29 @@ fn add_spaces_between_variables(s: &str) -> String {
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn split_cover_extracts_block_and_strips_it_from_body() {
+        let src = "---\ntitle: X\n---\n\n<!-- cover -->\n# Title\n\nSubtitle\n<!-- /cover -->\n\n## Section\n\nBody.\n";
+        let (cover, body) = split_cover(src);
+        assert_eq!(cover.as_deref(), Some("# Title\n\nSubtitle"));
+        assert!(body.contains("## Section"));
+        assert!(!body.contains("# Title"));
+        assert!(!body.contains("cover"));
+    }
+
+    #[test]
+    fn split_cover_tolerates_spacing_and_no_block() {
+        let (cover, _) = split_cover("<!--cover-->\nHi\n<!--/cover-->\n");
+        assert_eq!(cover.as_deref(), Some("Hi"));
+
+        let (none, body) = split_cover("# Just a doc\n\nNo cover here.");
+        assert!(none.is_none());
+        assert_eq!(body, "# Just a doc\n\nNo cover here.");
+    }
 }

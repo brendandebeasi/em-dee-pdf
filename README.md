@@ -28,6 +28,7 @@ Markdown -> comrak parser -> AST -> Typst transpiler -> Typst renderer -> PDF.
 - **PDF compression** — reduce output size by ~30% with `--compress`
 - **Stdin/stdout piping** — composable with other CLI tools
 - **Custom themes** — pass any `.typ` file for full control over styling
+- **Font auto-resolution** — warns when a theme's font is missing and can fetch it from Google Fonts (with your OK)
 
 ## Quickstart
 
@@ -104,6 +105,8 @@ Options:
       --mermaid                Enable mermaid diagram rendering (requires mermaid-cli)
       --no-background          Remove background fills for print-friendly output
       --compress               Compress the resulting PDF (disables tagging, deflate-compresses streams)
+      --download-fonts         Download missing theme fonts from Google Fonts without prompting
+      --no-download-fonts      Never download fonts; use only what's installed (alias: --offline)
   -h, --help                   Print help
   -V, --version                Print version
 ```
@@ -147,6 +150,38 @@ em-dee-pdf examples/showcase.md --theme book --toc -o examples/showcase-book.pdf
 em-dee-pdf examples/showcase.md --theme cards --toc --sections -o examples/showcase-cards.pdf
 em-dee-pdf examples/showcase.md --theme corporate --toc -o examples/showcase-corporate.pdf
 ```
+
+## Fonts
+
+Themes request fonts by name (e.g. the default `slate` theme uses Inter and
+JetBrains Mono). Typst renders with whatever font files it's given, so if a
+requested family isn't installed it silently falls back to a default face —
+which is how a document can come out in a spaced-out monospace font.
+
+em-dee-pdf checks each theme's font stacks against your installed fonts and
+handles the gaps:
+
+- **Installed** → used directly.
+- **Missing, on an interactive terminal** → you're asked whether to download it
+  from Google Fonts.
+- **Missing, non-interactive (CI, pipes)** → skipped with a warning telling you
+  to pass `--download-fonts`.
+- **Can't be downloaded** (proprietary, or not on Google Fonts) → a warning
+  naming the font and the fallback that will be used instead.
+
+Downloaded fonts are cached under your OS cache dir (`~/.cache/em-dee-pdf/fonts`
+on Linux) and reused on later runs.
+
+```bash
+# Download any missing theme fonts without prompting
+em-dee-pdf document.md --download-fonts
+
+# Never touch the network; use only installed fonts (alias: --offline)
+em-dee-pdf document.md --no-download-fonts
+```
+
+Set a default in config with `download_policy = "prompt" | "always" | "never"`
+under `[fonts]`.
 
 ## Configuration
 

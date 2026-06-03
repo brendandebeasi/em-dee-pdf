@@ -6,6 +6,7 @@ use typst_as_lib::TypstEngine;
 
 use crate::config::Config;
 use crate::error::{Error, Result};
+use crate::theme::Theme;
 
 /// Renders Typst source to PDF.
 pub struct Renderer {
@@ -15,7 +16,12 @@ pub struct Renderer {
 
 impl Renderer {
     /// Create a new renderer.
-    pub fn new(config: &Config) -> Result<Self> {
+    ///
+    /// Loads system fonts, then checks the theme's requested font families against
+    /// what's installed and resolves any that are missing (downloading from Google
+    /// Fonts when the configured [`crate::config::DownloadPolicy`] allows it, and
+    /// warning otherwise).
+    pub fn new(config: &Config, theme: &Theme) -> Result<Self> {
         let mut font_paths = config.fonts.search_paths.clone();
 
         // Add system font directories
@@ -46,7 +52,19 @@ impl Renderer {
         }
 
         // Load fonts from paths
-        let fonts = Self::load_fonts_from_paths(&font_paths);
+        let mut fonts = Self::load_fonts_from_paths(&font_paths);
+
+        // Resolve any font the theme asks for that the system doesn't have.
+        let available = crate::fonts::available_families(&fonts);
+        let cache_dir = dirs::cache_dir().map(|c| c.join("em-dee-pdf").join("fonts"));
+        let downloaded = crate::fonts::resolve(
+            &theme.name,
+            theme.preamble(),
+            &available,
+            config.fonts.download_policy,
+            cache_dir,
+        );
+        fonts.extend(downloaded);
 
         Ok(Self { fonts })
     }

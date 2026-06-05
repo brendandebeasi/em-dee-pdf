@@ -70,3 +70,7 @@ lopdf = "0.34"
 dirs = "6"
 tempfile = "3"
 base64 = "0.22"
+
+# Font resolution (read family names, download missing fonts)
+ttf-parser = "0.25"
+ureq = "2"

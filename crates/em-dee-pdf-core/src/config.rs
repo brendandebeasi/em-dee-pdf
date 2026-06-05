@@ -133,6 +133,9 @@ pub struct FontConfig {
 
     /// Default monospace font override.
     pub monospace_family: Option<String>,
+
+    /// What to do when a theme requests a font the system doesn't have.
+    pub download_policy: DownloadPolicy,
 }
 
 impl Default for FontConfig {
@@ -141,8 +144,22 @@ impl Default for FontConfig {
             search_paths: Vec::new(),
             default_family: None,
             monospace_family: None,
+            download_policy: DownloadPolicy::default(),
         }
     }
+}
+
+/// How to handle a requested font that isn't installed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DownloadPolicy {
+    /// Ask on an interactive terminal; skip the download otherwise.
+    #[default]
+    Prompt,
+    /// Download from Google Fonts without asking.
+    Always,
+    /// Never download; use installed fonts only.
+    Never,
 }
 
 /// Parser extension configuration.

@@ -21,6 +21,7 @@
 
 pub mod config;
 pub mod error;
+pub mod fonts;
 pub mod mermaid;
 pub mod parser;
 pub mod renderer;
@@ -50,8 +51,10 @@ impl Converter {
     pub fn new(config: Config) -> Result<Self> {
         let parser = Parser::new(&config);
         let theme = Theme::load(&config.theme)?;
+        // Build the renderer first so it can inspect the theme's font stacks and
+        // resolve any missing families before the theme is moved into the transpiler.
+        let renderer = Renderer::new(&config, &theme)?;
         let transpiler = Transpiler::new(theme, &config);
-        let renderer = Renderer::new(&config)?;
 
         Ok(Self {
             config,

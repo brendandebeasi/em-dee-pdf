@@ -75,6 +75,14 @@ struct Cli {
     /// Compress the resulting PDF (disables tagging, deflate-compresses streams)
     #[arg(long)]
     compress: bool,
+
+    /// Download missing theme fonts from Google Fonts without prompting
+    #[arg(long, conflicts_with = "no_download_fonts")]
+    download_fonts: bool,
+
+    /// Never download fonts; use only what's installed (alias: --offline)
+    #[arg(long, visible_alias = "offline")]
+    no_download_fonts: bool,
 }
 
 fn main() -> Result<()> {
@@ -110,6 +118,13 @@ fn main() -> Result<()> {
     config.extensions.mermaid = cli.mermaid;
     config.output.no_background = cli.no_background;
     config.output.compress = cli.compress;
+    config.fonts.download_policy = if cli.download_fonts {
+        em_dee_pdf_core::config::DownloadPolicy::Always
+    } else if cli.no_download_fonts {
+        em_dee_pdf_core::config::DownloadPolicy::Never
+    } else {
+        em_dee_pdf_core::config::DownloadPolicy::Prompt
+    };
 
     // Create converter
     let converter = Converter::new(config).context("Failed to create converter")?;

@@ -35,7 +35,7 @@
   justify: true,
   first-line-indent: 1.5em,
 )
-#show raw: set par(justify: false)
+#show raw.where(block: true): set par(justify: false)
 
 // Chapter headings - elegant book style
 #show heading.where(level: 1): it => {

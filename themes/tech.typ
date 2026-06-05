@@ -70,7 +70,7 @@
   leading: 0.75em,
   justify: false,  // Tech docs usually don't justify
 )
-#show raw: set par(justify: false)
+#show raw.where(block: true): set par(justify: false)
 
 #show par: set block(spacing: 0.9em)
 
